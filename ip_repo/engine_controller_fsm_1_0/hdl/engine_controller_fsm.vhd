@@ -7,15 +7,15 @@ entity engine_controller_fsm is
 		C_S00_AXI_DATA_WIDTH	: integer	:= 32;
 		C_S00_AXI_ADDR_WIDTH	: integer	:= 4;
 		C_M00_AXI_START_DATA_VALUE	: std_logic_vector	:= x"AA000000";
-		C_M00_AXI_TARGET_SLAVE_BASE_ADDR	: std_logic_vector	:= x"00000000"; -- Base FIR
+		C_M00_AXI_TARGET_SLAVE_BASE_ADDR	: std_logic_vector	:= x"00000000"; -- FIR Base Address
 		C_M00_AXI_ADDR_WIDTH	: integer	:= 32;
 		C_M00_AXI_DATA_WIDTH	: integer	:= 32;
 		C_M00_AXI_TRANSACTIONS_NUM	: integer	:= 4
 	);
 	port (
-		-- CUSTOM PORTS PER LA FSM DEL PROFESSORE
-		bus_sel_o       : out std_logic;     -- 1 = Isola l'Host, 0 = Host connesso
-		engine_done_i   : in std_logic;      -- Segnale di DONE dal FIR
+		-- CUSTOM FSM PORTS
+		bus_sel_o       : out std_logic;     -- 1 = Isolate Host, 0 = Host connected
+		engine_done_i   : in std_logic;      -- DONE signal from the FIR engine
 
 		-- Ports of Axi Slave Bus Interface S00_AXI
 		s00_axi_aclk	: in std_logic;
@@ -70,9 +70,11 @@ end engine_controller_fsm;
 
 architecture arch_imp of engine_controller_fsm is
 
-    -- Segnali interni per far comunicare Slave e Master
+    -- Internal signals to connect Slave and Master
 	signal host_start_w : std_logic;
 	signal fsm_done_w   : std_logic;
+    
+	signal start_trigger_w : std_logic;
 
 	component engine_controller_fsm_slave_lite_v1_0_S00_AXI is
 		generic (
@@ -143,6 +145,19 @@ architecture arch_imp of engine_controller_fsm is
 
 begin
 
+    -- =========================================================
+    -- RESOLUTION OF 'FLOATING' PORTS (TESTBENCH FIX)
+    -- =========================================================
+    -- 1. Assign the internal DONE signal to the external output pin
+    m00_axi_txn_done <= fsm_done_w;
+    
+    -- 2. Tie the error pin to ground (unused in this design)
+    m00_axi_error    <= '0';
+    
+    -- 3. Logical OR: The FSM starts if it receives the trigger from the AXI Slave (real system) 
+    start_trigger_w <= host_start_w or m00_axi_init_axi_txn;
+    -- =========================================================
+
 engine_controller_fsm_slave_lite_v1_0_S00_AXI_inst : engine_controller_fsm_slave_lite_v1_0_S00_AXI
 	generic map (
 		C_S_AXI_DATA_WIDTH	=> C_S00_AXI_DATA_WIDTH,
@@ -181,7 +196,7 @@ engine_controller_fsm_master_lite_v1_0_M00_AXI_inst : engine_controller_fsm_mast
 		C_M_AXI_DATA_WIDTH	=> C_M00_AXI_DATA_WIDTH
 	)
 	port map (
-		host_start_i  => host_start_w,
+		host_start_i  => start_trigger_w, 
 		fsm_done_o    => fsm_done_w,
 		bus_sel_o     => bus_sel_o,
 		engine_done_i => engine_done_i,
