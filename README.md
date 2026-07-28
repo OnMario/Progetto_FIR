@@ -1,8 +1,13 @@
-# Automated SoC FIR Filter on Xilinx Arty FPGA
+# Automated SoC FIR Filter on Xilinx Arty A7-100T FPGA
 
-This repository contains the hardware design, simulation testbenches, and Hardware-in-the-Loop (HIL) automation scripts for a System-on-Chip (SoC) FIR Filter, targeted for the Xilinx Arty FPGA board.
+This repository contains the hardware design, simulation testbenches, and Hardware-in-the-Loop (HIL) automation scripts for a System-on-Chip (SoC) FIR Filter, targeted for the **Xilinx Arty A7-100T** FPGA board.
 
 The project is designed to be fully automated, allowing users to recreate the Vivado project from a clean clone, run RTL simulations, and execute physical hardware tests seamlessly.
+
+## 🛠️ Prerequisites
+*   **Xilinx Vivado 2025.2** (or newer)
+*   Digilent Arty A7-100T FPGA Board
+*   Micro-USB cable for JTAG programming and AXI communication
 
 ## 📂 Repository Structure
 
@@ -23,7 +28,7 @@ Depending on your preferred workflow, you can launch the demo using one of the f
 
 ### Method 1: Using Vivado Tcl Shell (Recommended)
 
-This method runs the entire pipeline in the background (batch mode), providing clean terminal outputs.
+This method runs the entire pipeline in the background (batch mode), providing clean terminal outputs and saving a significant amount of time.
 
 1. Open the **Vivado Tcl Shell** (or Vivado Command Prompt) from your OS application menu.
 2. Navigate to the cloned repository folder:
@@ -56,5 +61,7 @@ If you already have the Vivado Graphical User Interface open and prefer to see t
 When you run either of the master scripts (`run_demo.bat` or `run_demo.tcl`), the following automated steps are executed sequentially:
 
 1. **Project Reconstruction (`recreate_project.tcl`)**: Creates a fresh Vivado project, imports the IPs, and stitches the Block Design together.
-2. **RTL Simulation (`run_sim.tcl`)**: Launches the behavioral simulation using the AXI VIP to verify the mathematical Golden Model.
+2. **RTL Simulation (`run_sim.tcl`)**: Launches the system-level behavioral simulation using the AXI VIP to mathematically verify the Golden Model.
 3. **Hardware-in-the-Loop Test (`hil_test.tcl`)**: Bypasses the 30-minute local build by fetching the Golden Bitstream from `/precompiled/`, programs the physical FPGA, and sends real AXI transactions via USB (JTAG-to-AXI Master) to validate the hardware. Check the `led_pronto_2` on your board for the success signal!
+
+> **Note on Custom Builds:** If you modify the HDL code or the Block Design and wish to generate a new bitstream, you can manually source `run_build.tcl` in the Tcl Console before running the HIL test.
