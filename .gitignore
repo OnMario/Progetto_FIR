@@ -1,4 +1,4 @@
-# Ignora le cartelle di build e i file temporanei di Vivado
+# Ignore Vivado build folders and temporary files
 *.cache/
 *.hw/
 *.ip_user_files/
@@ -10,9 +10,8 @@
 *.jou
 *.str
 
-# Ignora i bitstream compilati (opzionale, ma consigliato per risparmiare spazio)
-*.bit
+# Ignore compiled bitstreams
 *.bin
 
-# Ignora le cartelle di Vitis HLS (tieni solo i file sorgente .cpp e .h)
+# Ignore Vitis HLS folders (keep only .cpp and .h source files)
 */solution1/
