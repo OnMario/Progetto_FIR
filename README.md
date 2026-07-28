@@ -22,9 +22,39 @@ First, ensure that your Xilinx Arty board is connected to your PC via USB and tu
 Depending on your preferred workflow, you can launch the demo using one of the following two methods:
 
 ### Method 1: Using Vivado Tcl Shell (Recommended)
-This method runs the entire pipeline in background (batch mode) providing clean terminal outputs.
+
+This method runs the entire pipeline in the background (batch mode), providing clean terminal outputs.
 
 1. Open the **Vivado Tcl Shell** (or Vivado Command Prompt) from your OS application menu.
 2. Navigate to the cloned repository folder:
    ```cmd
    cd path/to/your/cloned/repo
+   ```
+3. Run the master batch script:
+   ```cmd
+   run_demo.bat
+   ```
+
+### Method 2: Using Vivado GUI (Tcl Console)
+
+If you already have the Vivado Graphical User Interface open and prefer to see the project block design and waveforms, use this method.
+
+1. Open Vivado.
+2. In the bottom **Tcl Console**, navigate to the repository folder:
+   ```tcl
+   cd path/to/your/cloned/repo
+   ```
+3. Source the master TCL script:
+   ```tcl
+   source run_demo.tcl
+   ```
+
+---
+
+## ⚙️ Pipeline Breakdown
+
+When you run either of the master scripts (`run_demo.bat` or `run_demo.tcl`), the following automated steps are executed sequentially:
+
+1. **Project Reconstruction (`recreate_project.tcl`)**: Creates a fresh Vivado project, imports the IPs, and stitches the Block Design together.
+2. **RTL Simulation (`run_sim.tcl`)**: Launches the behavioral simulation using the AXI VIP to verify the mathematical Golden Model.
+3. **Hardware-in-the-Loop Test (`hil_test.tcl`)**: Bypasses the 30-minute local build by fetching the Golden Bitstream from `/precompiled/`, programs the physical FPGA, and sends real AXI transactions via USB (JTAG-to-AXI Master) to validate the hardware. Check the `led_pronto_2` on your board for the success signal!
