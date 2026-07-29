@@ -1,19 +1,19 @@
 puts "=================================================================="
 puts "        AUTOMATED DEMO: SoC FIR FILTER ON XILINX ARTY FPGA"
 puts "=================================================================="
-puts ">>> Esecuzione Step 1: Ricostruzione Progetto..."
-source recreate_project.tcl
+puts ">>> Executing Step 1: Project Reconstruction..."
+source scripts/recreate_project.tcl
 
 puts "=================================================================="
-puts ">>> Esecuzione Step 2: Simulazione RTL..."
+puts ">>> Executing Step 2: RTL Simulation..."
 puts "=================================================================="
-source run_sim.tcl
+source scripts/run_sim.tcl
 
 puts "=================================================================="
-puts ">>> Esecuzione Step 3: HIL Test su FPGA..."
+puts ">>> Executing Step 3: HIL Test on FPGA..."
 puts "=================================================================="
-source hil_test.tcl
+source scripts/hil_test.tcl
 
 puts "=================================================================="
-puts "                  >>> DEMO COMPLETATA CON SUCCESSO! <<<"
+puts "                  >>> DEMO COMPLETED SUCCESSFULLY! <<<"
 puts "=================================================================="

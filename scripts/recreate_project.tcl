@@ -83,7 +83,7 @@ if { [info exists ::user_project_name] } {
 }
 
 variable script_file
-set script_file "recreate_project.tcl"
+set script_file "scripts/recreate_project.tcl"
 
 # Help information for this script
 proc print_help {} {
@@ -1509,74 +1509,6 @@ set_property -name "options.warn_on_violation" -value "1" -objects $obj
 set_property -name "options.more_options" -value "" -objects $obj
 
 }
-set obj [get_runs impl_1]
-set_property -name "constrset" -value "constrs_1" -objects $obj
-set_property -name "description" -value "Default settings for Implementation." -objects $obj
-set_property -name "flow" -value "Vivado Implementation 2025" -objects $obj
-set_property -name "name" -value "impl_1" -objects $obj
-set_property -name "needs_refresh" -value "1" -objects $obj
-set_property -name "part" -value "xc7a100tcsg324-1" -objects $obj
-set_property -name "pr_configuration" -value "" -objects $obj
-set_property -name "dfx_mode" -value "STANDARD" -objects $obj
-set_property -name "srcset" -value "sources_1" -objects $obj
-set_property -name "auto_incremental_checkpoint" -value "0" -objects $obj
-set_property -name "gen_reports_parallel" -value "1" -objects $obj
-set_property -name "rqs_files" -value "" -objects $obj
-set_property -name "ml_strategy_runs" -value "" -objects $obj
-set_property -name "auto_rqs" -value "0" -objects $obj
-set_property -name "auto_rqs.directory" -value "$proj_dir/${_xil_proj_name_}.srcs/utils_1/imports/impl_1" -objects $obj
-set_property -name "incremental_checkpoint.more_options" -value "" -objects $obj
-set_property -name "include_in_archive" -value "1" -objects $obj
-set_property -name "gen_full_bitstream" -value "1" -objects $obj
-set_property -name "auto_incremental_checkpoint.directory" -value "$proj_dir/${_xil_proj_name_}.srcs/utils_1/imports/impl_1" -objects $obj
-set_property -name "min_rqa_score" -value "0" -objects $obj
-set_property -name "strategy" -value "Vivado Implementation Defaults" -objects $obj
-set_property -name "steps.init_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.init_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.init_design.args.more options" -value {} -objects $obj
-set_property -name "steps.opt_design.is_enabled" -value "1" -objects $obj
-set_property -name "steps.opt_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.opt_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.opt_design.args.verbose" -value "0" -objects $obj
-set_property -name "steps.opt_design.args.directive" -value "Default" -objects $obj
-set_property -name "steps.opt_design.args.more options" -value {} -objects $obj
-set_property -name "steps.power_opt_design.is_enabled" -value "0" -objects $obj
-set_property -name "steps.power_opt_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.power_opt_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.power_opt_design.args.more options" -value {} -objects $obj
-set_property -name "steps.place_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.place_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.place_design.args.directive" -value "Default" -objects $obj
-set_property -name "steps.place_design.args.more options" -value {} -objects $obj
-set_property -name "steps.post_place_power_opt_design.is_enabled" -value "0" -objects $obj
-set_property -name "steps.post_place_power_opt_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.post_place_power_opt_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.post_place_power_opt_design.args.more options" -value {} -objects $obj
-set_property -name "steps.phys_opt_design.is_enabled" -value "1" -objects $obj
-set_property -name "steps.phys_opt_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.phys_opt_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.phys_opt_design.args.directive" -value "Default" -objects $obj
-set_property -name "steps.phys_opt_design.args.more options" -value {} -objects $obj
-set_property -name "steps.route_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.route_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.route_design.args.directive" -value "Default" -objects $obj
-set_property -name "steps.route_design.args.more options" -value {} -objects $obj
-set_property -name "steps.post_route_phys_opt_design.is_enabled" -value "0" -objects $obj
-set_property -name "steps.post_route_phys_opt_design.tcl.pre" -value "" -objects $obj
-set_property -name "steps.post_route_phys_opt_design.tcl.post" -value "" -objects $obj
-set_property -name "steps.post_route_phys_opt_design.args.directive" -value "Default" -objects $obj
-set_property -name "steps.post_route_phys_opt_design.args.more options" -value {} -objects $obj
-set_property -name "steps.write_bitstream.tcl.pre" -value "" -objects $obj
-set_property -name "steps.write_bitstream.tcl.post" -value "" -objects $obj
-set_property -name "steps.write_bitstream.args.raw_bitfile" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.mask_file" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.no_binary_bitfile" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.bin_file" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.readback_file" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.logic_location_file" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.verbose" -value "0" -objects $obj
-set_property -name "steps.write_bitstream.args.more options" -value {} -objects $obj
-
 # Create 'impl_1_copy_1' run (if not found)
 if {[string equal [get_runs -quiet impl_1_copy_1] ""]} {
     create_run -name impl_1_copy_1 -part xc7a100tcsg324-1 -flow {Vivado Implementation 2025} -strategy "Vivado Implementation Defaults" -report_strategy {No Reports} -constrset constrs_1 -parent_run synth_1

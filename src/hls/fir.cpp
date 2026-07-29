@@ -13,26 +13,26 @@ void fir_engine(short *in_buffer, short *out_buffer) {
     short shift_reg[N_TAPS];
     #pragma HLS ARRAY_PARTITION variable=shift_reg complete dim=1
     
-    // Inizializzazione manuale a zero
+    // Manual initialization to zero
     for(int i = 0; i < N_TAPS; i++) {
         #pragma HLS UNROLL
         shift_reg[i] = 0;
     }
 
     short local_in[BLOCK_SIZE];
-    short local_out[OUT_SIZE]; // Il buffer di uscita ora è da 26
+    short local_out[OUT_SIZE]; // Output buffer is now size 26
 
-    // FASE 1: Lettura dei 16 ingressi
+    // PHASE 1: Reading the 16 inputs
     Read_Burst: for(int i = 0; i < BLOCK_SIZE; i++) {
         #pragma HLS PIPELINE II=1
         local_in[i] = in_buffer[i];
     }
 
-    // FASE 2: Calcolo su 26 iterazioni
+    // PHASE 2: Calculation over 26 iterations
     Process_Loop: for (int b = 0; b < OUT_SIZE; b++) {
         #pragma HLS PIPELINE II=1
         
-        // Superato il 16esimo campione, inseriamo ZERI finti
+        // Past the 16th sample, we feed dummy ZEROS
         short x = (b < BLOCK_SIZE) ? local_in[b] : (short)0;
         int acc = 0;
         
@@ -47,7 +47,7 @@ void fir_engine(short *in_buffer, short *out_buffer) {
         local_out[b] = (short)acc;
     }
 
-    // Scrittura dei risultati sul bus AXI
+    // Writing the results to the AXI bus
     Write_Burst: for(int i = 0; i < OUT_SIZE; i++) {
         #pragma HLS PIPELINE II=1
         out_buffer[i] = local_out[i];
