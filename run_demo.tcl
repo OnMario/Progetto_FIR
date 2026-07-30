@@ -9,8 +9,13 @@ puts ">>> Executing Step 2: RTL Simulation..."
 puts "=================================================================="
 source scripts/run_sim.tcl
 
+#puts "=================================================================="
+#puts ">>> Executing Step 3: BITSTREAM Generation..."
+#puts "=================================================================="
+#source scripts/run_build.tcl
+
 puts "=================================================================="
-puts ">>> Executing Step 3: HIL Test on FPGA..."
+puts ">>> Executing Step 4: HIL Test on FPGA..."
 puts "=================================================================="
 source scripts/hil_test.tcl
 
