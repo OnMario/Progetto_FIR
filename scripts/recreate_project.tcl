@@ -32,116 +32,65 @@
 #*****************************************************************************************
 
 # Check file required for this script exists
-proc checkRequiredFiles { origin_dir} {
+proc checkRequiredFiles { origin_dir } {
   set status true
-  set files [list \
- "[file normalize "$origin_dir/sim/tb_axi_system.sv"]"\
-  ]
+  set files [list "[file normalize "$origin_dir/src/sim/tb_axi_system.sv"]"]
   foreach ifile $files {
-    if { ![file isfile $ifile] } {
-      puts " Could not find local file $ifile "
-      set status false
-    }
+    if { ![file isfile $ifile] } { puts " Could not find local file $ifile "; set status false }
   }
-
-  set files [list \
- "[file normalize "$origin_dir/xdc/Arty-A7-100-Master.xdc"]"\
-  ]
+  set files [list "[file normalize "$origin_dir/src/xdc/Arty-A7-100-Master.xdc"]"]
   foreach ifile $files {
-    if { ![file isfile $ifile] } {
-      puts " Could not find remote file $ifile "
-      set status false
-    }
+    if { ![file isfile $ifile] } { puts " Could not find remote file $ifile "; set status false }
   }
-
-  set paths [list \
- "[file normalize "$origin_dir/ip_repo"]"\
-  ]
-  foreach ipath $paths {
-    if { ![file isdirectory $ipath] } {
-      puts " Could not access $ipath "
-      set status false
-    }
-  }
-
   return $status
 }
-# Set the reference directory for source file relative paths (by default the value is script directory path)
+
 set origin_dir "."
+if { [info exists ::origin_dir_loc] } { set origin_dir $::origin_dir_loc }
 
-# Use origin directory path location variable, if specified in the tcl shell
-if { [info exists ::origin_dir_loc] } {
-  set origin_dir $::origin_dir_loc
-}
-
-# Set the project name
 set _xil_proj_name_ "project_3"
+if { [info exists ::user_project_name] } { set _xil_proj_name_ $::user_project_name }
 
-# Use project name variable, if specified in the tcl shell
-if { [info exists ::user_project_name] } {
-  set _xil_proj_name_ $::user_project_name
+if { ![checkRequiredFiles $origin_dir] } {
+  puts "Tcl file validation failed. Exiting."
+  return
 }
 
-variable script_file
-set script_file "scripts/recreate_project.tcl"
+# =========================================================
+# IP Generation (HLS & Custom FSM)
+# =========================================================
+puts ">>> \[INFO\] Generating HLS IP via Vitis HLS..."
 
-# Help information for this script
-proc print_help {} {
-  variable script_file
-  puts "\nDescription:"
-  puts "Recreate a Vivado project from this script. The created project will be"
-  puts "functionally equivalent to the original project for which this script was"
-  puts "generated. The script contains commands for creating a project, filesets,"
-  puts "runs, adding/importing sources and setting properties on various objects.\n"
-  puts "Syntax:"
-  puts "$script_file"
-  puts "$script_file -tclargs \[--origin_dir <path>\]"
-  puts "$script_file -tclargs \[--project_name <name>\]"
-  puts "$script_file -tclargs \[--help\]\n"
-  puts "Usage:"
-  puts "Name                     Description"
-  puts "-------------------------------------------------------------------------"
-  puts "\[--origin_dir <path>\]  Determine source file paths wrt this path. Default"
-  puts "                       origin_dir path value is \".\", otherwise, the value"
-  puts "                       that was set with the \"-paths_relative_to\" switch"
-  puts "                       when this script was generated.\n"
-  puts "\[--project_name <name>\] Create project with the specified name. Default"
-  puts "                       name is the name of the project from where this"
-  puts "                       script was generated.\n"
-  puts "\[--help\]               Print help information for this script"
-  puts "-------------------------------------------------------------------------\n"
-  exit 0
-}
+# Nuovo percorso Vitis Unificato per la versione 2025.2
+set vitis_run_path "C:/AMDDesignTools/2025.2/Vitis/bin/vitis-run.bat"
 
-if { $::argc > 0 } {
-  for {set i 0} {$i < $::argc} {incr i} {
-    set option [string trim [lindex $::argv $i]]
-    switch -regexp -- $option {
-      "--origin_dir"   { incr i; set origin_dir [lindex $::argv $i] }
-      "--project_name" { incr i; set _xil_proj_name_ [lindex $::argv $i] }
-      "--help"         { print_help }
-      default {
-        if { [regexp {^-} $option] } {
-          puts "ERROR: Unknown option '$option' specified, please type '$script_file -tclargs --help' for usage info.\n"
-          return 1
-        }
-      }
-    }
-  }
-}
-
-# Check for paths and files needed for project creation
-set validate_required 0
-if { $validate_required } {
-  if { [checkRequiredFiles $origin_dir] } {
-    puts "Tcl file $script_file is valid. All files required for project creation is accesable. "
-  } else {
-    puts "Tcl file $script_file is not valid. Not all files required for project creation is accesable. "
+# Controllo di sicurezza
+if { ![file exists $vitis_run_path] } {
+    puts ">>> \[ERROR\] Vitis Run non trovato in: $vitis_run_path"
     return
-  }
 }
 
+# Esegue il file batch passando da cmd.exe usando la nuova sintassi --mode hls --tcl
+if { [catch {exec cmd /c $vitis_run_path --mode hls --tcl ./scripts/build_hls_ip.tcl} msg] } {
+    puts ">>> \[ERROR\] Sintesi Vitis HLS Fallita! Dettagli:\n$msg"
+    return
+} else {
+    puts $msg
+    
+    # NOVITA': Copia la cartella decompressa dell'IP HLS in ip_repo per farla trovare a Vivado
+    puts ">>> \[INFO\] Estrazione dell'IP HLS in corso..."
+    file delete -force ./ip_repo/fir_engine_hls_ip
+    file delete -force ./ip_repo/fir_engine_hls_ip.zip
+    file mkdir ./ip_repo
+    file copy -force ./temp_hls_prj/solution1/impl/ip ./ip_repo/fir_engine_hls_ip
+}
+
+puts ">>> \[INFO\] Generating Custom FSM IP..."
+source ./scripts/package_ip.tcl
+
+# =========================================================
 # Create project (ADDED -force)
+# =========================================================
 create_project ${_xil_proj_name_} ./${_xil_proj_name_} -part xc7a100tcsg324-1 -force
 
 # Set the directory path for the new project
@@ -214,10 +163,10 @@ if {[string equal [get_filesets -quiet sources_1] ""]} {
   create_fileset -srcset sources_1
 }
 
-# Set IP repository paths (CORRECTED)
+# Set IP repository paths 
 set obj [get_filesets sources_1]
 if { $obj != {} } {
-   set_property "ip_repo_paths" "[file normalize "$origin_dir/ip_repo"]" $obj
+   set_property "ip_repo_paths" "[file normalize "$origin_dir/ip_repo"]" [current_project]
 
    # Rebuild user ip_repo's index before adding any source files
    update_ip_catalog -rebuild
@@ -255,10 +204,10 @@ if {[string equal [get_filesets -quiet constrs_1] ""]} {
 # Set 'constrs_1' fileset object
 set obj [get_filesets constrs_1]
 
-# Add/Import constrs file and set constrs file properties (CORRECTED)
-set file "[file normalize "$origin_dir/xdc/Arty-A7-100-Master.xdc"]"
+# Add/Import constrs file and set constrs file properties 
+set file "[file normalize "$origin_dir/src/xdc/Arty-A7-100-Master.xdc"]"
 set file_added [add_files -norecurse -fileset $obj [list $file]]
-set file "$origin_dir/xdc/Arty-A7-100-Master.xdc"
+set file "$origin_dir/src/xdc/Arty-A7-100-Master.xdc"
 set file [file normalize $file]
 set file_obj [get_files -of_objects [get_filesets constrs_1] [list "*$file"]]
 set_property -name "file_type" -value "XDC" -objects $file_obj
@@ -273,13 +222,13 @@ set_property -name "used_in" -value "synthesis implementation" -objects $file_ob
 set_property -name "used_in_implementation" -value "1" -objects $file_obj
 set_property -name "used_in_synthesis" -value "1" -objects $file_obj
 
-# Set 'constrs_1' fileset properties (CORRECTED)
+# Set 'constrs_1' fileset properties 
 set obj [get_filesets constrs_1]
 set_property -name "constrs_type" -value "XDC" -objects $obj
 set_property -name "name" -value "constrs_1" -objects $obj
-set_property -name "target_constrs_file" -value "[file normalize "$origin_dir/xdc/Arty-A7-100-Master.xdc"]" -objects $obj
+set_property -name "target_constrs_file" -value "[file normalize "$origin_dir/src/xdc/Arty-A7-100-Master.xdc"]" -objects $obj
 set_property -name "target_part" -value "xc7a100tcsg324-1" -objects $obj
-set_property -name "target_ucf" -value "[file normalize "$origin_dir/xdc/Arty-A7-100-Master.xdc"]" -objects $obj
+set_property -name "target_ucf" -value "[file normalize "$origin_dir/src/xdc/Arty-A7-100-Master.xdc"]" -objects $obj
 
 # Create 'sim_1' fileset (if not found)
 if {[string equal [get_filesets -quiet sim_1] ""]} {
@@ -288,9 +237,9 @@ if {[string equal [get_filesets -quiet sim_1] ""]} {
 
 # Set 'sim_1' fileset object
 set obj [get_filesets sim_1]
-# Import local files from the original project (CORRECTED)
+# Import local files from the original project 
 set files [list \
- [file normalize "${origin_dir}/sim/tb_axi_system.sv" ]\
+ [file normalize "${origin_dir}/src/sim/tb_axi_system.sv" ]\
 ]
 set imported_files ""
 foreach f $files {
@@ -532,35 +481,21 @@ proc cr_bd_design_1 { parentCell } {
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTA [get_bd_intf_pins axi_bram_ctrl_0_bram/BRAM_PORTA] [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTA]
   connect_bd_intf_net -intf_net axi_bram_ctrl_0_BRAM_PORTB [get_bd_intf_pins axi_bram_ctrl_0_bram/BRAM_PORTB] [get_bd_intf_pins axi_bram_ctrl_0/BRAM_PORTB]
   connect_bd_intf_net -intf_net axi_smc_M00_AXI [get_bd_intf_pins axi_smc/M00_AXI] [get_bd_intf_pins axi_bram_ctrl_0/S_AXI]
-  connect_bd_intf_net -intf_net axi_smc_M01_AXI [get_bd_intf_pins axi_smc/M01_AXI] [get_bd_intf_pins engine_controller_fsm_0/S00_AXI]
-  connect_bd_intf_net -intf_net engine_controller_fsm_0_M00_AXI [get_bd_intf_pins fir_engine_0/s_axi_ctrl] [get_bd_intf_pins engine_controller_fsm_0/M00_AXI]
+  connect_bd_intf_net -intf_net axi_smc_M01_AXI [get_bd_intf_pins axi_smc/M01_AXI] [get_bd_intf_pins engine_controller_fsm_0/s00_axi]
+  connect_bd_intf_net -intf_net engine_controller_fsm_0_m00_axi [get_bd_intf_pins fir_engine_0/s_axi_ctrl] [get_bd_intf_pins engine_controller_fsm_0/m00_axi]
   connect_bd_intf_net -intf_net fir_engine_0_m_axi_gmem0 [get_bd_intf_pins fir_engine_0/m_axi_gmem0] [get_bd_intf_pins axi_smc/S01_AXI]
 
   # Create port connections
-  connect_bd_net -net aclk_0_1  [get_bd_ports aclk_0] \
-  [get_bd_pins axi_smc/aclk] \
-  [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] \
-  [get_bd_pins fir_engine_0/ap_clk] \
-  [get_bd_pins engine_controller_fsm_0/s00_axi_aclk] \
-  [get_bd_pins engine_controller_fsm_0/m00_axi_aclk]
-  connect_bd_net -net aresetn_0_1  [get_bd_ports aresetn_0] \
-  [get_bd_pins axi_smc/aresetn] \
-  [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] \
-  [get_bd_pins fir_engine_0/ap_rst_n] \
-  [get_bd_pins engine_controller_fsm_0/s00_axi_aresetn] \
-  [get_bd_pins engine_controller_fsm_0/m00_axi_aresetn]
-  connect_bd_net -net fir_engine_0_interrupt  [get_bd_pins fir_engine_0/interrupt] \
-  [get_bd_ports led_pronto_2] \
-  [get_bd_pins engine_controller_fsm_0/engine_done_i]
+  connect_bd_net -net aclk_0_1  [get_bd_ports aclk_0] [get_bd_pins axi_smc/aclk] [get_bd_pins axi_bram_ctrl_0/s_axi_aclk] [get_bd_pins fir_engine_0/ap_clk] [get_bd_pins engine_controller_fsm_0/s00_axi_aclk] [get_bd_pins engine_controller_fsm_0/m00_axi_aclk]
+  connect_bd_net -net aresetn_0_1  [get_bd_ports aresetn_0] [get_bd_pins axi_smc/aresetn] [get_bd_pins axi_bram_ctrl_0/s_axi_aresetn] [get_bd_pins fir_engine_0/ap_rst_n] [get_bd_pins engine_controller_fsm_0/s00_axi_aresetn] [get_bd_pins engine_controller_fsm_0/m00_axi_aresetn]
+  connect_bd_net -net fir_engine_0_interrupt  [get_bd_pins fir_engine_0/interrupt] [get_bd_ports led_pronto_2] [get_bd_pins engine_controller_fsm_0/engine_done_i]
 
   # Create address segments
   assign_bd_address -offset 0xC0000000 -range 0x00002000 -target_address_space [get_bd_addr_spaces fir_engine_0/Data_m_axi_gmem0] [get_bd_addr_segs axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces engine_controller_fsm_0/M00_AXI] [get_bd_addr_segs fir_engine_0/s_axi_ctrl/Reg] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces engine_controller_fsm_0/m00_axi] [get_bd_addr_segs fir_engine_0/s_axi_ctrl/Reg] -force
   assign_bd_address -offset 0xC0000000 -range 0x00002000 -target_address_space [get_bd_addr_spaces S00_AXI_0] [get_bd_addr_segs axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces S00_AXI_0] [get_bd_addr_segs engine_controller_fsm_0/S00_AXI/S00_AXI_reg] -force
-
-  # Exclude Address Segments
-  exclude_bd_addr_seg -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces fir_engine_0/Data_m_axi_gmem0] [get_bd_addr_segs engine_controller_fsm_0/S00_AXI/S00_AXI_reg]
+  assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces S00_AXI_0] [get_bd_addr_segs engine_controller_fsm_0/s00_axi/reg0] -force
+  exclude_bd_addr_seg -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces fir_engine_0/Data_m_axi_gmem0] [get_bd_addr_segs engine_controller_fsm_0/s00_axi/reg0]
 
 
   # Restore current instance
@@ -721,8 +656,8 @@ proc cr_bd_sim_top { parentCell } {
 
   # Create address segments
   assign_bd_address -offset 0xC0000000 -range 0x00002000 -target_address_space [get_bd_addr_spaces axi_vip_0/Master_AXI] [get_bd_addr_segs design_1_0/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces axi_vip_0/Master_AXI] [get_bd_addr_segs design_1_0/engine_controller_fsm_0/S00_AXI/S00_AXI_reg] -force
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces design_1_0/engine_controller_fsm_0/M00_AXI] [get_bd_addr_segs design_1_0/fir_engine_0/s_axi_ctrl/Reg] -force
+  assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces axi_vip_0/Master_AXI] [get_bd_addr_segs design_1_0/engine_controller_fsm_0/s00_axi/reg0] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces design_1_0/engine_controller_fsm_0/m00_axi] [get_bd_addr_segs design_1_0/fir_engine_0/s_axi_ctrl/Reg] -force
   assign_bd_address -offset 0xC0000000 -range 0x00002000 -target_address_space [get_bd_addr_spaces design_1_0/fir_engine_0/Data_m_axi_gmem0] [get_bd_addr_segs design_1_0/axi_bram_ctrl_0/S_AXI/Mem0] -force
 
 
@@ -878,8 +813,8 @@ proc cr_bd_synth_top { parentCell } {
 
   # Create address segments
   assign_bd_address -offset 0xC0000000 -range 0x00002000 -target_address_space [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs design_1_0/axi_bram_ctrl_0/S_AXI/Mem0] -force
-  assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs design_1_0/engine_controller_fsm_0/S00_AXI/S00_AXI_reg] -force
-  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces design_1_0/engine_controller_fsm_0/M00_AXI] [get_bd_addr_segs design_1_0/fir_engine_0/s_axi_ctrl/Reg] -force
+  assign_bd_address -offset 0x44A00000 -range 0x00010000 -target_address_space [get_bd_addr_spaces jtag_axi_0/Data] [get_bd_addr_segs design_1_0/engine_controller_fsm_0/s00_axi/reg0] -force
+  assign_bd_address -offset 0x00000000 -range 0x00010000 -target_address_space [get_bd_addr_spaces design_1_0/engine_controller_fsm_0/m00_axi] [get_bd_addr_segs design_1_0/fir_engine_0/s_axi_ctrl/Reg] -force
   assign_bd_address -offset 0xC0000000 -range 0x00002000 -target_address_space [get_bd_addr_spaces design_1_0/fir_engine_0/Data_m_axi_gmem0] [get_bd_addr_segs design_1_0/axi_bram_ctrl_0/S_AXI/Mem0] -force
 
   # Exclude Address Segments
@@ -931,10 +866,10 @@ if { [get_property IS_LOCKED [ get_files -norecurse [list synth_top.bd]] ] == 1 
 }
 
 
-# Set IP repository paths (CORRECTED)
+# Set IP repository paths 
 set obj [get_filesets design_1_inst_0]
 if { $obj != {} } {
-   set_property "ip_repo_paths" "[file normalize "$origin_dir/ip_repo"]" $obj
+   set_property "ip_repo_paths" "[file normalize "$origin_dir/ip_repo"]" [current_project]
 
    # Rebuild user ip_repo's index before adding any source files
    update_ip_catalog -rebuild
@@ -969,10 +904,10 @@ set_property -name "verilog_version" -value "verilog_2001" -objects $obj
 set_property -name "vhdl_define" -value "" -objects $obj
 set_property -name "vhdl_version" -value "vhdl_2k" -objects $obj
 
-# Set IP repository paths (CORRECTED)
+# Set IP repository paths 
 set obj [get_filesets design_1_inst_1]
 if { $obj != {} } {
-   set_property "ip_repo_paths" "[file normalize "$origin_dir/ip_repo"]" $obj
+   set_property "ip_repo_paths" "[file normalize "$origin_dir/ip_repo"]" [current_project]
 
    # Rebuild user ip_repo's index before adding any source files
    update_ip_catalog -rebuild

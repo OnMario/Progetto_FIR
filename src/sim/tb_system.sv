@@ -9,7 +9,7 @@ module tb_system();
     logic aresetn;
     logic led_pronto;
 
-    // AXI4-Lite Slave Interface Signals (driven by Testbench)
+    // AXI4-Lite Slave Interface Signals
     logic [31:0] s_axi_awaddr  = 0;
     logic [2:0]  s_axi_awprot  = 0;
     logic        s_axi_awvalid = 0;

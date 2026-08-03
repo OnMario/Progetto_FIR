@@ -10,7 +10,7 @@ module tb_axi_system_fsm();
     // =========================================================
     logic clk_100MHz;
     logic aresetn_0; 
-    logic led_pronto_2; // <--- DONE SIGNAL from FSM
+    logic led_pronto_2; // <--- DONE SIGNAL
 
     // Clock Generation
     initial begin
