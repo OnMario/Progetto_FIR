@@ -39,7 +39,7 @@ puts " \[INFO\] Initializing JTAG-to-AXI Connection..."
 puts "------------------------------------------------------"
 set jtag_axi [lindex [get_hw_axis] 0]
 if {$jtag_axi == ""} {
-    puts "[ERROR] JTAG-to-AXI IP not found! Check Block Design."
+    puts "\[ERROR\] JTAG-to-AXI IP not found! Check Block Design."
     exit 1
 }
 reset_hw_axi [get_hw_axis $jtag_axi]
@@ -83,7 +83,7 @@ while {$fsm_is_done == 0 && $count < $timeout} {
     
     if {$status_hex eq "00000001"} {
         set fsm_is_done 1
-        puts " [SUCCESS] Hardware FSM: Elaboration Completed!"
+        puts " \[SUCCESS\] Hardware FSM: Elaboration Completed!"
     } else {
         after 10
         incr count
@@ -91,7 +91,7 @@ while {$fsm_is_done == 0 && $count < $timeout} {
 }
 
 if {$fsm_is_done == 0} {
-    puts " [ERROR] FSM Timeout! Hardware took too long or crashed."
+    puts " \[ERROR\] FSM Timeout! Hardware took too long or crashed."
 }
 
 create_hw_axi_txn ctrl_txn [get_hw_axis $jtag_axi] -type WRITE -address $FSM_START_REG -data 00000000 -force
@@ -145,7 +145,7 @@ for {set i 0} {$i < $OUT_SIZE} {incr i} {
     set exp_val [lindex $golden_output $i]
     
     if {$hw_val != $exp_val} {
-        puts " [ERROR] Index $i -> Expected: $exp_val, HW Read: $hw_val"
+        puts " \[ERROR\] Index $i -> Expected: $exp_val, HW Read: $hw_val"
         incr error_count
     }
 }
@@ -157,3 +157,45 @@ if {$error_count == 0} {
     puts " \[ERROR\] TEST FAILED with $error_count errors."
 }
 puts "------------------------------------------------------"
+
+# =========================================================
+# Test Report (JUnit XML for GitHub/GitLab)
+# =========================================================
+puts " \[INFO\] Generating JUnit Test Report..."
+set report_file [open "hil_report.xml" w]
+
+puts $report_file "<?xml version=\"1.0\" encoding=\"UTF-8\"?>"
+puts $report_file "<testsuites>"
+
+set exit_code 0
+
+if {$fsm_is_done == 0} {
+    # Case 1: Timeout Failure
+    puts $report_file "  <testsuite name=\"Hardware_In_The_Loop\" tests=\"1\" failures=\"1\">"
+    puts $report_file "    <testcase name=\"FIR_FSM_Execution\" classname=\"Arty_A7_FPGA\">"
+    puts $report_file "      <failure message=\"Timeout reached waiting for FSM\">The FSM did not return 1 within the timeout period.</failure>"
+    puts $report_file "    </testcase>"
+    puts $report_file "  </testsuite>"
+    set exit_code 1
+} elseif {$error_count > 0} {
+    # Case 2: Data Mismatch Failure
+    puts $report_file "  <testsuite name=\"Hardware_In_The_Loop\" tests=\"1\" failures=\"1\">"
+    puts $report_file "    <testcase name=\"FIR_FSM_Execution\" classname=\"Arty_A7_FPGA\">"
+    puts $report_file "      <failure message=\"Data mismatch error\">Hardware output did not match golden model. $error_count errors found.</failure>"
+    puts $report_file "    </testcase>"
+    puts $report_file "  </testsuite>"
+    set exit_code 1
+} else {
+    # Case 3: Success
+    puts $report_file "  <testsuite name=\"Hardware_In_The_Loop\" tests=\"1\" failures=\"0\">"
+    puts $report_file "    <testcase name=\"FIR_FSM_Execution\" classname=\"Arty_A7_FPGA\" time=\"[expr {$count * 0.01}]\"/>"
+    puts $report_file "  </testsuite>"
+}
+
+puts $report_file "</testsuites>"
+close $report_file
+puts " \[INFO\] Report saved to hil_report.xml"
+
+if {$exit_code != 0} {
+    exit 1
+}
