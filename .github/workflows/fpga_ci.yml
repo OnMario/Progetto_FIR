@@ -1,0 +1,32 @@
+name: FPGA Automated HIL Pipeline
+
+on:
+  push:
+    branches: [ "master", "main" ]
+
+jobs:
+  build-and-test:
+    runs-on: self-hosted
+
+    steps:
+      - name: 0. Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          clean: true 
+
+      - name: 1. Project Reconstruction & IP Generation
+        shell: cmd
+        run: |
+          C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat -mode batch -source scripts/recreate_project.tcl
+
+      - name: 2. RTL Simulation
+        shell: cmd
+        run: |
+          C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat -mode batch -source scripts/run_sim.tcl
+
+      # La fase di Build (Sintesi e Bitstream) è stata rimossa per usare il bitstream precompilato
+      
+      - name: 3. Hardware-in-the-Loop (HIL) Test
+        shell: cmd
+        run: |
+          C:\AMDDesignTools\2025.2\Vivado\bin\vivado.bat -mode batch -source scripts/hil_test.tcl
