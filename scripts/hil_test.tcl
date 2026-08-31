@@ -13,7 +13,7 @@ set current_device [lindex [get_hw_devices] 0]
 current_hw_device $current_device
 refresh_hw_device -update_hw_probes false $current_device
 
-set bit_file [glob -nocomplain .precompiled/*.bit]
+set bit_file [glob -nocomplain ./precompiled/*.bit]
 if {[llength $bit_file] == 0} {
     puts "\[ERROR\] No bitstream found! Run build step first."
     exit 1
