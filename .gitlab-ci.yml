@@ -1,0 +1,40 @@
+stages:
+  - setup
+  - simulate
+  - test
+
+variables:
+
+  VIVADO_EXEC: "C:\\AMDDesignTools\\2025.2\\Vivado\\bin\\vivado.bat"
+  GIT_CLEAN_FLAGS: none # Evita di cancellare i file generati tra uno step e l'altro
+
+# --- STEP 1 ---
+recreate_project:
+  stage: setup
+  tags:
+    - fpga-arty-a7 
+  script:
+    - echo "Project Reconstruction & IP Generation"
+    - '%VIVADO_EXEC% -mode batch -source scripts/recreate_project.tcl'
+
+# --- STEP 2: RTL simulation ---
+rtl_simulation:
+  stage: simulate
+  tags:
+    - fpga-arty-a7
+  script:
+    - echo "RTL Simulation"
+    - '%VIVADO_EXEC% -mode batch -source scripts/run_sim.tcl'
+
+# --- STEP 3: HIL Test e Report ---
+hil_test:
+  stage: test
+  tags:
+    - fpga-arty-a7
+  script:
+    - echo "Hardware-in-the-Loop Test"
+    - '%VIVADO_EXEC% -mode batch -source scripts/hil_test.tcl'
+  artifacts:
+    when: always
+    reports:
+      junit: hil_report.xml
